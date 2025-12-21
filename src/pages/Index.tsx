@@ -5,11 +5,13 @@ import { ActiveTrip } from '@/components/ActiveTrip';
 import { mockDriver, mockTrips } from '@/data/mockData';
 import { Trip, TripStatus } from '@/types/trip';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const [trips, setTrips] = useState<Trip[]>(mockTrips);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSelectTrip = (trip: Trip) => {
     setSelectedTrip(trip);
@@ -57,9 +59,15 @@ const Index = () => {
     t.status === 'in_progress'
   )?.id;
 
+  // Use mock driver data but could integrate with auth user email
+  const driverInfo = {
+    ...mockDriver,
+    name: user?.email?.split('@')[0] || mockDriver.name,
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <Header driver={mockDriver} />
+      <Header driver={driverInfo} />
       
       {selectedTrip ? (
         <ActiveTrip 

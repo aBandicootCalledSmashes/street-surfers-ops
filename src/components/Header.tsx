@@ -1,5 +1,16 @@
-import { Circle, Menu } from 'lucide-react';
+import { useState } from 'react';
+import { Circle, LogOut, Menu, X } from 'lucide-react';
 import { Driver } from '@/types/trip';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface HeaderProps {
   driver: Driver;
@@ -7,6 +18,16 @@ interface HeaderProps {
 }
 
 export function Header({ driver, onMenuClick }: HeaderProps) {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await signOut();
+    navigate('/auth', { replace: true });
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="container flex items-center justify-between h-16 px-4">
@@ -28,24 +49,43 @@ export function Header({ driver, onMenuClick }: HeaderProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-sm font-medium">{driver.name}</p>
-            <p className="text-xs text-muted-foreground">{driver.plateNumber}</p>
-          </div>
-          <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-              <span className="text-sm font-bold">
-                {driver.name.split(' ').map(n => n[0]).join('')}
-              </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-3 p-1 pr-2 -mr-2 rounded-lg hover:bg-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50">
+              <div className="text-right">
+                <p className="text-sm font-medium">{driver.name}</p>
+                <p className="text-xs text-muted-foreground">{driver.plateNumber}</p>
+              </div>
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                  <span className="text-sm font-bold">
+                    {driver.name.split(' ').map(n => n[0]).join('')}
+                  </span>
+                </div>
+                <Circle 
+                  className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${
+                    driver.isOnline ? 'text-success fill-success' : 'text-muted-foreground fill-muted-foreground'
+                  }`} 
+                />
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <div className="px-2 py-2">
+              <p className="text-sm font-medium text-foreground">{driver.name}</p>
+              <p className="text-xs text-muted-foreground">{driver.vehicle}</p>
             </div>
-            <Circle 
-              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${
-                driver.isOnline ? 'text-success fill-success' : 'text-muted-foreground fill-muted-foreground'
-              }`} 
-            />
-          </div>
-        </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="text-destructive focus:text-destructive focus:bg-destructive/10"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {isLoggingOut ? 'Signing out...' : 'Sign out'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
