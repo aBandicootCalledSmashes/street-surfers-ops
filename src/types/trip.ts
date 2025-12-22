@@ -6,11 +6,20 @@ export type TripStatus =
   | 'completed' 
   | 'cancelled';
 
+export type PassengerStatus = 
+  | 'pending'
+  | 'picked_up'
+  | 'dropped_off'
+  | 'failed_pickup'
+  | 'cancelled';
+
 export interface Passenger {
   id: string;
   name: string;
   phone: string;
   count: number;
+  status: PassengerStatus;
+  statusUpdatedAt?: string;
 }
 
 export interface Location {
@@ -40,4 +49,12 @@ export interface Driver {
   vehicle: string;
   plateNumber: string;
   isOnline: boolean;
+}
+
+export interface StatusLogEntry {
+  passengerId: string;
+  previousStatus: PassengerStatus;
+  newStatus: PassengerStatus;
+  timestamp: string;
+  tripId: string;
 }
