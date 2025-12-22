@@ -27,9 +27,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
+      console.log('No role found for user:', userId);
       setRole(null);
       return null;
     }
