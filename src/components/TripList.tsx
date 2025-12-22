@@ -16,34 +16,34 @@ export function TripList({ trips, onSelectTrip, activeTripId }: TripListProps) {
   const completedTrips = trips.filter(t => t.status === 'completed');
 
   return (
-    <div className="p-4 space-y-6 animate-slide-up">
-      <div className="flex items-center gap-3">
-        <Calendar className="w-5 h-5 text-primary" />
+    <div className="p-4 pb-8 space-y-6 animate-slide-up safe-area-bottom">
+      <div className="flex items-center gap-3 touch-target">
+        <Calendar className="w-6 h-6 text-primary" />
         <div>
-          <h2 className="text-xl font-bold">Today's Trips</h2>
-          <p className="text-sm text-muted-foreground">{format(new Date(), 'EEEE, d MMMM')}</p>
+          <h2 className="text-2xl font-bold">Today's Trips</h2>
+          <p className="text-base text-muted-foreground">{format(new Date(), 'EEEE, d MMMM')}</p>
         </div>
       </div>
 
       {pendingTrips.length === 0 && completedTrips.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
-            <Calendar className="w-8 h-8 text-muted-foreground" />
+        <div className="text-center py-16">
+          <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-10 h-10 text-muted-foreground" />
           </div>
-          <p className="text-lg font-medium">No trips assigned</p>
-          <p className="text-muted-foreground">Check back later for new assignments</p>
+          <p className="text-xl font-medium">No trips assigned</p>
+          <p className="text-base text-muted-foreground mt-1">Check back later for new assignments</p>
         </div>
       ) : (
         <>
           {pendingTrips.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between touch-target">
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                   Upcoming
                 </p>
-                <span className="text-sm font-bold text-primary">{pendingTrips.length}</span>
+                <span className="text-base font-bold text-primary">{pendingTrips.length}</span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {pendingTrips.map((trip, index) => (
                   <div key={trip.id} style={{ animationDelay: `${index * 50}ms` }}>
                     <TripCard 
@@ -58,14 +58,14 @@ export function TripList({ trips, onSelectTrip, activeTripId }: TripListProps) {
           )}
 
           {completedTrips.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-success" />
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 touch-target">
+                <CheckCircle2 className="w-5 h-5 text-success" />
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                   Completed ({completedTrips.length})
                 </p>
               </div>
-              <div className="space-y-3 opacity-60">
+              <div className="space-y-4 opacity-60">
                 {completedTrips.map(trip => (
                   <TripCard 
                     key={trip.id} 

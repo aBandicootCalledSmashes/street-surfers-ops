@@ -16,6 +16,7 @@ export const mockTrips: Trip[] = [
       name: 'Sarah Williams',
       phone: '+27 82 555 1234',
       count: 2,
+      status: 'pending',
     },
     pickup: {
       address: '45 Long Street, Cape Town CBD',
@@ -38,6 +39,7 @@ export const mockTrips: Trip[] = [
       name: 'David Chen',
       phone: '+27 83 555 5678',
       count: 1,
+      status: 'pending',
     },
     pickup: {
       address: '88 Main Road, Observatory',
@@ -58,6 +60,7 @@ export const mockTrips: Trip[] = [
       name: 'Lisa Nkosi',
       phone: '+27 84 555 9012',
       count: 4,
+      status: 'pending',
     },
     pickup: {
       address: '156 Buitenkant Street, District Six',
@@ -79,6 +82,7 @@ export const mockTrips: Trip[] = [
       name: 'James Peterson',
       phone: '+27 85 555 3456',
       count: 2,
+      status: 'pending',
     },
     pickup: {
       address: '200 Voortrekker Road, Bellville',
