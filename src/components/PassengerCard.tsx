@@ -1,0 +1,211 @@
+import { useState } from 'react';
+import { Phone, MessageCircle, UserCheck, UserX, XCircle, CheckCircle2, Loader2, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from './ConfirmDialog';
+import { Passenger, PassengerStatus, TripStatus } from '@/types/trip';
+
+interface PassengerCardProps {
+  passenger: Passenger;
+  tripStatus: TripStatus;
+  onUpdatePassengerStatus: (passengerId: string, status: PassengerStatus) => Promise<void>;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+}
+
+type ActionType = 'picked_up' | 'dropped_off' | 'failed_pickup' | 'cancelled';
+
+export function PassengerCard({
+  passenger,
+  tripStatus,
+  onUpdatePassengerStatus,
+  isExpanded = false,
+  onToggleExpand,
+}: PassengerCardProps) {
+  const [confirmAction, setConfirmAction] = useState<ActionType | null>(null);
+  const [processing, setProcessing] = useState(false);
+
+  const handleAction = async () => {
+    if (!confirmAction || processing) return;
+    setProcessing(true);
+    try {
+      await onUpdatePassengerStatus(passenger.id, confirmAction);
+    } finally {
+      setProcessing(false);
+      setConfirmAction(null);
+    }
+  };
+
+  const getStatusBadge = () => {
+    const statusConfig = {
+      picked_up: { icon: UserCheck, label: 'Picked Up', bg: 'bg-success', text: 'text-success-foreground' },
+      dropped_off: { icon: CheckCircle2, label: 'Dropped Off', bg: 'bg-success', text: 'text-success-foreground' },
+      failed_pickup: { icon: UserX, label: 'No Show', bg: 'bg-warning', text: 'text-warning-foreground' },
+      cancelled: { icon: XCircle, label: 'Cancelled', bg: 'bg-destructive', text: 'text-destructive-foreground' },
+      pending: { icon: Users, label: 'Waiting', bg: 'bg-muted', text: 'text-muted-foreground' },
+    };
+    
+    const config = statusConfig[passenger.status];
+    const Icon = config.icon;
+    
+    return (
+      <div className={`flex items-center gap-1.5 px-3 py-1.5 ${config.bg} rounded-lg`}>
+        <Icon className={`w-4 h-4 ${config.text}`} />
+        <span className={`text-sm font-semibold ${config.text}`}>{config.label}</span>
+      </div>
+    );
+  };
+
+  const getAvailableActions = (): ActionType[] => {
+    if (passenger.status !== 'pending') return [];
+    
+    if (tripStatus === 'arrived_pickup') {
+      return ['picked_up', 'failed_pickup', 'cancelled'];
+    }
+    if (tripStatus === 'in_progress') {
+      return ['dropped_off', 'cancelled'];
+    }
+    if (tripStatus === 'en_route_pickup') {
+      return ['cancelled'];
+    }
+    return [];
+  };
+
+  const availableActions = getAvailableActions();
+
+  return (
+    <>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        {/* Header - Always visible */}
+        <button
+          onClick={onToggleExpand}
+          className="w-full p-4 flex items-center justify-between active:bg-secondary/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
+              <Users className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-foreground">{passenger.name}</p>
+              <p className="text-sm text-muted-foreground">{passenger.count} passenger{passenger.count > 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {getStatusBadge()}
+            {onToggleExpand && (
+              isExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />
+            )}
+          </div>
+        </button>
+
+        {/* Expanded content */}
+        {isExpanded && (
+          <div className="border-t border-border p-4 space-y-4 animate-slide-up">
+            {/* Contact buttons */}
+            <div className="flex gap-2">
+              <a 
+                href={`tel:${passenger.phone}`}
+                className="flex-1 flex items-center justify-center gap-2 p-3 bg-primary rounded-lg hover:bg-primary/90 transition-colors active:scale-95 min-h-[48px]"
+              >
+                <Phone className="w-5 h-5" />
+                <span className="font-medium">Call</span>
+              </a>
+              <a 
+                href={`sms:${passenger.phone}`}
+                className="flex-1 flex items-center justify-center gap-2 p-3 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors active:scale-95 min-h-[48px]"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="font-medium">Message</span>
+              </a>
+            </div>
+
+            {/* Action buttons - Only show if pending */}
+            {availableActions.length > 0 && (
+              <div className="grid grid-cols-1 gap-2">
+                {availableActions.includes('picked_up') && (
+                  <Button
+                    variant="success"
+                    size="lg"
+                    className="w-full min-h-[52px] text-base font-semibold"
+                    onClick={() => setConfirmAction('picked_up')}
+                    disabled={processing}
+                  >
+                    <UserCheck className="w-5 h-5" />
+                    Mark as Picked Up
+                  </Button>
+                )}
+                
+                {availableActions.includes('dropped_off') && (
+                  <Button
+                    variant="success"
+                    size="lg"
+                    className="w-full min-h-[52px] text-base font-semibold"
+                    onClick={() => setConfirmAction('dropped_off')}
+                    disabled={processing}
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    Mark as Dropped Off
+                  </Button>
+                )}
+
+                <div className="flex gap-2">
+                  {availableActions.includes('failed_pickup') && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="flex-1 min-h-[48px] border-warning text-warning hover:bg-warning/10"
+                      onClick={() => setConfirmAction('failed_pickup')}
+                      disabled={processing}
+                    >
+                      <UserX className="w-5 h-5" />
+                      No Show
+                    </Button>
+                  )}
+                  
+                  {availableActions.includes('cancelled') && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="flex-1 min-h-[48px] border-destructive text-destructive hover:bg-destructive/10"
+                      onClick={() => setConfirmAction('cancelled')}
+                      disabled={processing}
+                    >
+                      <XCircle className="w-5 h-5" />
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {confirmAction && (
+        <ConfirmDialog
+          open={!!confirmAction}
+          onOpenChange={(open) => !open && setConfirmAction(null)}
+          title={
+            confirmAction === 'picked_up' ? 'Confirm Pickup' :
+            confirmAction === 'dropped_off' ? 'Confirm Drop-off' :
+            confirmAction === 'failed_pickup' ? 'No Show' : 'Cancel Passenger'
+          }
+          description={
+            confirmAction === 'picked_up' ? `Mark ${passenger.name} as picked up?` :
+            confirmAction === 'dropped_off' ? `Mark ${passenger.name} as dropped off?` :
+            confirmAction === 'failed_pickup' ? `${passenger.name} was not present at pickup?` :
+            `Cancel ${passenger.name} from this trip?`
+          }
+          confirmLabel={
+            confirmAction === 'picked_up' ? 'Yes, Picked Up' :
+            confirmAction === 'dropped_off' ? 'Yes, Dropped Off' :
+            confirmAction === 'failed_pickup' ? 'Confirm No Show' : 'Yes, Cancel'
+          }
+          onConfirm={handleAction}
+          variant={confirmAction === 'cancelled' ? 'destructive' : confirmAction === 'failed_pickup' ? 'warning' : 'default'}
+          isLoading={processing}
+        />
+      )}
+    </>
+  );
+}

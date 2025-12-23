@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
-import { Phone, MapPin, Users, Navigation, CheckCircle2, ArrowLeft, MessageCircle, Loader2, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation, CheckCircle2, ArrowLeft, Loader2, AlertCircle, Clock, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Trip, TripStatus, PassengerStatus } from '@/types/trip';
-import { PassengerActions } from './PassengerActions';
-import { LoadingSpinner } from './LoadingSpinner';
+import { PassengerCard } from './PassengerCard';
+import { TripMap } from './TripMap';
 import { format } from 'date-fns';
 
 interface ActiveTripProps {
@@ -16,6 +16,7 @@ interface ActiveTripProps {
 export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStatus }: ActiveTripProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [expandedPassenger, setExpandedPassenger] = useState<string | null>(trip.passenger.id);
   const scheduledTime = new Date(trip.scheduledTime);
 
   const handleUpdateStatus = useCallback(async (newStatus: TripStatus) => {
@@ -25,7 +26,6 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
     setUpdateError(null);
     
     try {
-      // Simulate network delay for realistic feedback
       await new Promise(resolve => setTimeout(resolve, 300));
       onUpdateStatus(trip.id, newStatus);
     } catch {
@@ -45,6 +45,13 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
       throw new Error('Failed to update passenger status');
     }
   }, [onUpdatePassengerStatus, trip.id]);
+
+  // Determine if we can complete the trip
+  const canComplete = () => {
+    const status = trip.passenger.status;
+    // Can complete if passenger is dropped off, failed, or cancelled
+    return status === 'dropped_off' || status === 'failed_pickup' || status === 'cancelled';
+  };
 
   const getActionButton = () => {
     switch (trip.status) {
@@ -71,11 +78,10 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
             disabled={isUpdating}
           >
             {isUpdating ? <Loader2 className="w-6 h-6 animate-spin" /> : <MapPin className="w-6 h-6" />}
-            Arrived at Pickup
+            I've Arrived at Pickup
           </Button>
         );
       case 'arrived_pickup':
-        // Only show "Start to Drop-off" when passenger is picked up
         if (trip.passenger.status === 'picked_up') {
           return (
             <Button 
@@ -86,11 +92,10 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
               disabled={isUpdating}
             >
               {isUpdating ? <Loader2 className="w-6 h-6 animate-spin" /> : <Navigation className="w-6 h-6" />}
-              Start to Drop-off
+              Start Driving to Drop-off
             </Button>
           );
         }
-        // If passenger is failed/cancelled, allow completing the trip
         if (trip.passenger.status === 'failed_pickup' || trip.passenger.status === 'cancelled') {
           return (
             <Button 
@@ -105,10 +110,13 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
             </Button>
           );
         }
-        return null;
+        return (
+          <div className="text-center py-4 text-muted-foreground">
+            Mark passenger as picked up to continue
+          </div>
+        );
       case 'in_progress':
-        // Only allow completing when passenger is dropped off
-        if (trip.passenger.status === 'dropped_off' || trip.passenger.status === 'cancelled') {
+        if (canComplete()) {
           return (
             <Button 
               variant="success" 
@@ -122,7 +130,11 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
             </Button>
           );
         }
-        return null;
+        return (
+          <div className="text-center py-4 text-muted-foreground">
+            Mark passenger as dropped off to complete
+          </div>
+        );
       default:
         return null;
     }
@@ -130,23 +142,23 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
 
   const getStatusStep = () => {
     const steps = [
-      { key: 'assigned', label: 'Assigned' },
+      { key: 'assigned', label: 'Ready' },
       { key: 'en_route_pickup', label: 'En Route' },
-      { key: 'arrived_pickup', label: 'Arrived' },
-      { key: 'in_progress', label: 'In Progress' },
-      { key: 'completed', label: 'Completed' },
+      { key: 'arrived_pickup', label: 'At Pickup' },
+      { key: 'in_progress', label: 'Driving' },
+      { key: 'completed', label: 'Done' },
     ];
     const currentIndex = steps.findIndex(s => s.key === trip.status);
     
     return (
-      <div className="flex items-center gap-1 mb-6">
+      <div className="flex items-center gap-1">
         {steps.map((step, index) => (
           <div key={step.key} className="flex-1">
             <div 
-              className={`h-2 rounded-full transition-colors ${
+              className={`h-1.5 rounded-full transition-colors ${
                 index <= currentIndex 
                   ? index === currentIndex && trip.status !== 'completed'
-                    ? 'bg-primary animate-pulse-glow'
+                    ? 'bg-primary animate-pulse'
                     : 'bg-primary'
                   : 'bg-muted'
               }`}
@@ -157,118 +169,123 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
     );
   };
 
+  const isActive = trip.status !== 'completed' && trip.status !== 'cancelled';
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-      <div className="flex-1 p-4 space-y-5 animate-slide-up pb-32">
-        <button 
-          onClick={onBack}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 pl-1 active:scale-95"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-base">Back to trips</span>
-        </button>
+      <div className="flex-1 space-y-4 pb-32">
+        {/* Header with back button */}
+        <div className="px-4 pt-4">
+          <button 
+            onClick={onBack}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 pl-1 active:scale-95"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-base">Back</span>
+          </button>
+        </div>
 
-        {getStatusStep()}
+        {/* Map */}
+        <div className="px-4">
+          <TripMap 
+            pickupAddress={trip.pickup.address}
+            dropoffAddress={trip.dropoff.address}
+            status={trip.status}
+          />
+        </div>
+
+        {/* Status progress */}
+        <div className="px-4">
+          {getStatusStep()}
+        </div>
 
         {/* Error Banner */}
         {updateError && (
-          <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
+          <div className="mx-4 flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
             <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
             <p className="text-destructive text-sm font-medium">{updateError}</p>
           </div>
         )}
 
-        {/* Time & Passenger Info */}
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Scheduled Time</p>
-              <p className="text-2xl font-bold">{format(scheduledTime, 'HH:mm')}</p>
+        {/* Time info */}
+        <div className="px-4">
+          <div className="flex items-center justify-between bg-card border border-border rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Scheduled</p>
+                <p className="text-xl font-bold">{format(scheduledTime, 'HH:mm')}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-secondary rounded-lg">
+            <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg">
               <Users className="w-5 h-5 text-muted-foreground" />
               <span className="font-bold text-lg">{trip.passenger.count}</span>
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-border">
+        {/* Locations */}
+        <div className="px-4">
+          <div className="bg-card border border-border rounded-xl p-4 space-y-3">
             <div>
-              <p className="text-sm text-muted-foreground">Passenger</p>
-              <p className="text-lg font-semibold">{trip.passenger.name}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide">Pickup</p>
+              </div>
+              <p className="font-medium pl-4">{trip.pickup.address}</p>
+              {trip.pickup.landmark && (
+                <p className="text-sm text-muted-foreground pl-4">{trip.pickup.landmark}</p>
+              )}
             </div>
-            <div className="flex gap-2">
-              <a 
-                href={`tel:${trip.passenger.phone}`}
-                className="p-3.5 bg-primary rounded-lg hover:bg-primary/90 transition-colors active:scale-95 min-w-[48px] min-h-[48px] flex items-center justify-center"
-              >
-                <Phone className="w-5 h-5" />
-              </a>
-              <a 
-                href={`sms:${trip.passenger.phone}`}
-                className="p-3.5 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors active:scale-95 min-w-[48px] min-h-[48px] flex items-center justify-center"
-              >
-                <MessageCircle className="w-5 h-5" />
-              </a>
+
+            <div className="pl-1">
+              <div className="w-0.5 h-4 bg-border ml-[3px]" />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <MapPin className="w-2.5 h-2.5 text-success" />
+                <p className="text-xs font-semibold text-success uppercase tracking-wide">Drop-off</p>
+              </div>
+              <p className="font-medium pl-4">{trip.dropoff.address}</p>
+              {trip.dropoff.landmark && (
+                <p className="text-sm text-muted-foreground pl-4">{trip.dropoff.landmark}</p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Passenger Actions - Show when at pickup or in progress */}
-        {(trip.status === 'arrived_pickup' || trip.status === 'in_progress' || trip.status === 'en_route_pickup') && (
-          <div className="bg-card border border-border rounded-xl p-5">
-            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-              Passenger Status
+        {/* Passenger Card - Always show during active trip */}
+        {isActive && (
+          <div className="px-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 pl-1">
+              Passengers
             </p>
-            <PassengerActions
+            <PassengerCard
               passenger={trip.passenger}
               tripStatus={trip.status}
               onUpdatePassengerStatus={handlePassengerStatusUpdate}
-              isLoading={isUpdating}
+              isExpanded={expandedPassenger === trip.passenger.id}
+              onToggleExpand={() => setExpandedPassenger(
+                expandedPassenger === trip.passenger.id ? null : trip.passenger.id
+              )}
             />
           </div>
         )}
 
-        {/* Locations */}
-        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-3 h-3 rounded-full bg-primary" />
-              <p className="text-sm font-semibold text-primary uppercase tracking-wide">Pickup</p>
-            </div>
-            <p className="text-lg font-medium pl-5">{trip.pickup.address}</p>
-            {trip.pickup.landmark && (
-              <p className="text-sm text-muted-foreground pl-5 mt-1">{trip.pickup.landmark}</p>
-            )}
-          </div>
-
-          <div className="relative pl-1.5">
-            <div className="absolute left-[5px] top-0 bottom-0 w-0.5 bg-border" />
-            <div className="h-4" />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin className="w-3 h-3 text-foreground" />
-              <p className="text-sm font-semibold uppercase tracking-wide">Drop-off</p>
-            </div>
-            <p className="text-lg font-medium pl-5">{trip.dropoff.address}</p>
-            {trip.dropoff.landmark && (
-              <p className="text-sm text-muted-foreground pl-5 mt-1">{trip.dropoff.landmark}</p>
-            )}
-          </div>
-        </div>
-
         {/* Notes */}
         {trip.notes && (
-          <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
-            <p className="text-sm font-semibold text-warning mb-1">Driver Notes</p>
-            <p className="text-foreground">{trip.notes}</p>
+          <div className="px-4">
+            <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
+              <p className="text-xs font-semibold text-warning uppercase tracking-wide mb-1">Driver Notes</p>
+              <p className="text-foreground">{trip.notes}</p>
+            </div>
           </div>
         )}
       </div>
 
       {/* Fixed Action Button */}
-      {trip.status !== 'completed' && trip.status !== 'cancelled' && (
+      {isActive && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8 safe-area-bottom">
           {getActionButton()}
         </div>
