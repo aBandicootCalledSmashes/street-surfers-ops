@@ -58,60 +58,64 @@ const Index = () => {
 
   const handleUpdatePassengerStatus = useCallback((tripId: string, passengerId: string, status: PassengerStatus) => {
     const timestamp = new Date().toISOString();
-    
-    setTrips(prevTrips => 
+
+    setTrips(prevTrips =>
       prevTrips.map(trip => {
         if (trip.id !== tripId) return trip;
-        
-        if (trip.passenger.id === passengerId) {
-          // Log the status change
-          const logEntry: StatusLogEntry = {
-            passengerId,
-            previousStatus: trip.passenger.status,
-            newStatus: status,
-            timestamp,
-            tripId,
-          };
-          setStatusLog(prev => [...prev, logEntry]);
-          
-          return {
-            ...trip,
-            passenger: {
-              ...trip.passenger,
-              status,
-              statusUpdatedAt: timestamp,
-            },
-            updatedAt: timestamp,
-          };
-        }
-        return trip;
+
+        const passengerIndex = trip.passengers.findIndex(p => p.id === passengerId);
+        if (passengerIndex === -1) return trip;
+
+        const previousStatus = trip.passengers[passengerIndex].status;
+
+        // Log the status change
+        const logEntry: StatusLogEntry = {
+          passengerId,
+          previousStatus,
+          newStatus: status,
+          timestamp,
+          tripId,
+        };
+        setStatusLog(prev => [...prev, logEntry]);
+
+        const nextPassengers = trip.passengers.map(p =>
+          p.id === passengerId
+            ? { ...p, status, statusUpdatedAt: timestamp }
+            : p
+        );
+
+        return {
+          ...trip,
+          passengers: nextPassengers,
+          updatedAt: timestamp,
+        };
       })
     );
 
     // Update selected trip
     setSelectedTrip(prev => {
       if (prev?.id !== tripId) return prev;
-      
-      if (prev.passenger.id === passengerId) {
-        return {
-          ...prev,
-          passenger: {
-            ...prev.passenger,
-            status,
-            statusUpdatedAt: timestamp,
-          },
-          updatedAt: timestamp,
-        };
-      }
-      return prev;
+
+      const passengerIndex = prev.passengers.findIndex(p => p.id === passengerId);
+      if (passengerIndex === -1) return prev;
+
+      return {
+        ...prev,
+        passengers: prev.passengers.map(p =>
+          p.id === passengerId
+            ? { ...p, status, statusUpdatedAt: timestamp }
+            : p
+        ),
+        updatedAt: timestamp,
+      };
     });
 
     const statusMessages: Record<PassengerStatus, string> = {
-      'pending': 'Status reset',
-      'picked_up': 'Passenger picked up',
-      'dropped_off': 'Passenger dropped off',
-      'failed_pickup': 'Pickup marked as failed',
-      'cancelled': 'Passenger cancelled',
+      pending: 'Status reset',
+      picked_up: 'Passenger picked up',
+      dropped_off: 'Passenger dropped off',
+      failed_pickup: 'Pickup marked as failed',
+      cancelled: 'Passenger cancelled',
     };
 
     toast({
@@ -119,8 +123,8 @@ const Index = () => {
       duration: 2000,
     });
 
-    console.log('Status log:', [...statusLog, { passengerId, status, timestamp, tripId }]);
-  }, [toast, statusLog]);
+    console.log('Passenger status change', { passengerId, status, timestamp, tripId });
+  }, [toast]);
 
   // Get the currently active trip (in progress)
   const activeTripId = trips.find(t => 
