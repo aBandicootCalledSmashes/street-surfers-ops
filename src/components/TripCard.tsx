@@ -71,10 +71,12 @@ export function TripCard({ trip, onClick, isActive }: TripCardProps) {
       <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-muted-foreground" />
-          <span className="text-base">{trip.passenger.count} passenger{trip.passenger.count > 1 ? 's' : ''}</span>
+          <span className="text-base">{trip.passengers.length} passenger{trip.passengers.length !== 1 ? 's' : ''}</span>
         </div>
         <span className="text-muted-foreground">•</span>
-        <span className="text-base font-medium truncate">{trip.passenger.name}</span>
+        <span className="text-base font-medium truncate">
+          {trip.passengers[0]?.name}{trip.passengers.length > 1 ? ` +${trip.passengers.length - 1}` : ''}
+        </span>
       </div>
     </button>
   );

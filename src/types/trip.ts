@@ -33,7 +33,7 @@ export interface Location {
 
 export interface Trip {
   id: string;
-  passenger: Passenger;
+  passengers: Passenger[];
   pickup: Location;
   dropoff: Location;
   scheduledTime: string;

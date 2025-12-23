@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { MapPin, Navigation, CheckCircle2, ArrowLeft, Loader2, AlertCircle, Clock, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Trip, TripStatus, PassengerStatus } from '@/types/trip';
 import { PassengerCard } from './PassengerCard';
-import { TripMap } from './TripMap';
+import { TripMapLeaflet } from './TripMapLeaflet';
 import { format } from 'date-fns';
 
 interface ActiveTripProps {
@@ -16,15 +16,15 @@ interface ActiveTripProps {
 export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStatus }: ActiveTripProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [expandedPassenger, setExpandedPassenger] = useState<string | null>(trip.passenger.id);
+  const [expandedPassenger, setExpandedPassenger] = useState<string | null>(trip.passengers[0]?.id ?? null);
   const scheduledTime = new Date(trip.scheduledTime);
 
   const handleUpdateStatus = useCallback(async (newStatus: TripStatus) => {
     if (isUpdating) return;
-    
+
     setIsUpdating(true);
     setUpdateError(null);
-    
+
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
       onUpdateStatus(trip.id, newStatus);
@@ -38,7 +38,7 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
   const handlePassengerStatusUpdate = useCallback(async (passengerId: string, status: PassengerStatus) => {
     setUpdateError(null);
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 250));
       onUpdatePassengerStatus(trip.id, passengerId, status);
     } catch {
       setUpdateError('Failed to update passenger status. Please try again.');
@@ -46,20 +46,20 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
     }
   }, [onUpdatePassengerStatus, trip.id]);
 
-  // Determine if we can complete the trip
-  const canComplete = () => {
-    const status = trip.passenger.status;
-    // Can complete if passenger is dropped off, failed, or cancelled
-    return status === 'dropped_off' || status === 'failed_pickup' || status === 'cancelled';
-  };
+  const allPassengersFinal = useMemo(() => {
+    if (!trip.passengers.length) return false;
+    return trip.passengers.every(p => p.status === 'dropped_off' || p.status === 'failed_pickup' || p.status === 'cancelled');
+  }, [trip.passengers]);
+
+  const anyPickedUp = useMemo(() => trip.passengers.some(p => p.status === 'picked_up'), [trip.passengers]);
 
   const getActionButton = () => {
     switch (trip.status) {
       case 'assigned':
         return (
-          <Button 
-            variant="action" 
-            size="xl" 
+          <Button
+            variant="action"
+            size="xl"
             className="w-full min-h-[64px]"
             onClick={() => handleUpdateStatus('en_route_pickup')}
             disabled={isUpdating}
@@ -70,9 +70,9 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
         );
       case 'en_route_pickup':
         return (
-          <Button 
-            variant="action" 
-            size="xl" 
+          <Button
+            variant="action"
+            size="xl"
             className="w-full min-h-[64px]"
             onClick={() => handleUpdateStatus('arrived_pickup')}
             disabled={isUpdating}
@@ -82,11 +82,11 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
           </Button>
         );
       case 'arrived_pickup':
-        if (trip.passenger.status === 'picked_up') {
+        if (anyPickedUp) {
           return (
-            <Button 
-              variant="success" 
-              size="xl" 
+            <Button
+              variant="success"
+              size="xl"
               className="w-full min-h-[64px]"
               onClick={() => handleUpdateStatus('in_progress')}
               disabled={isUpdating}
@@ -96,11 +96,11 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
             </Button>
           );
         }
-        if (trip.passenger.status === 'failed_pickup' || trip.passenger.status === 'cancelled') {
+        if (allPassengersFinal) {
           return (
-            <Button 
-              variant="outline" 
-              size="xl" 
+            <Button
+              variant="outline"
+              size="xl"
               className="w-full min-h-[64px]"
               onClick={() => handleUpdateStatus('completed')}
               disabled={isUpdating}
@@ -112,15 +112,15 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
         }
         return (
           <div className="text-center py-4 text-muted-foreground">
-            Mark passenger as picked up to continue
+            Mark at least one passenger as picked up, or mark remaining as no-show/cancel.
           </div>
         );
       case 'in_progress':
-        if (canComplete()) {
+        if (allPassengersFinal) {
           return (
-            <Button 
-              variant="success" 
-              size="xl" 
+            <Button
+              variant="success"
+              size="xl"
               className="w-full min-h-[64px]"
               onClick={() => handleUpdateStatus('completed')}
               disabled={isUpdating}
@@ -132,7 +132,7 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
         }
         return (
           <div className="text-center py-4 text-muted-foreground">
-            Mark passenger as dropped off to complete
+            Drop off, cancel, or no-show remaining passengers to complete.
           </div>
         );
       default:
@@ -149,14 +149,14 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
       { key: 'completed', label: 'Done' },
     ];
     const currentIndex = steps.findIndex(s => s.key === trip.status);
-    
+
     return (
       <div className="flex items-center gap-1">
         {steps.map((step, index) => (
           <div key={step.key} className="flex-1">
-            <div 
+            <div
               className={`h-1.5 rounded-full transition-colors ${
-                index <= currentIndex 
+                index <= currentIndex
                   ? index === currentIndex && trip.status !== 'completed'
                     ? 'bg-primary animate-pulse'
                     : 'bg-primary'
@@ -171,12 +171,20 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
 
   const isActive = trip.status !== 'completed' && trip.status !== 'cancelled';
 
+  const driverCoords = useMemo(() => {
+    const p = trip.pickup.coordinates;
+    const d = trip.dropoff.coordinates;
+    if (p && d) return { lat: (p.lat + d.lat) / 2, lng: (p.lng + d.lng) / 2 };
+    return undefined;
+  }, [trip.pickup.coordinates, trip.dropoff.coordinates]);
+
+  const passengerTotal = trip.passengers.length;
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
       <div className="flex-1 space-y-4 pb-32">
-        {/* Header with back button */}
         <div className="px-4 pt-4">
-          <button 
+          <button
             onClick={onBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 pl-1 active:scale-95"
           >
@@ -185,21 +193,17 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
           </button>
         </div>
 
-        {/* Map */}
         <div className="px-4">
-          <TripMap 
-            pickupAddress={trip.pickup.address}
-            dropoffAddress={trip.dropoff.address}
+          <TripMapLeaflet
+            pickup={trip.pickup.coordinates}
+            dropoff={trip.dropoff.coordinates}
+            driver={driverCoords}
             status={trip.status}
           />
         </div>
 
-        {/* Status progress */}
-        <div className="px-4">
-          {getStatusStep()}
-        </div>
+        <div className="px-4">{getStatusStep()}</div>
 
-        {/* Error Banner */}
         {updateError && (
           <div className="mx-4 flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
             <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
@@ -207,7 +211,6 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
           </div>
         )}
 
-        {/* Time info */}
         <div className="px-4">
           <div className="flex items-center justify-between bg-card border border-border rounded-xl p-4">
             <div className="flex items-center gap-3">
@@ -219,12 +222,11 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg">
               <Users className="w-5 h-5 text-muted-foreground" />
-              <span className="font-bold text-lg">{trip.passenger.count}</span>
+              <span className="font-bold text-lg">{passengerTotal}</span>
             </div>
           </div>
         </div>
 
-        {/* Locations */}
         <div className="px-4">
           <div className="bg-card border border-border rounded-xl p-4 space-y-3">
             <div>
@@ -255,25 +257,28 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
           </div>
         </div>
 
-        {/* Passenger Card - Always show during active trip */}
         {isActive && (
           <div className="px-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 pl-1">
               Passengers
             </p>
-            <PassengerCard
-              passenger={trip.passenger}
-              tripStatus={trip.status}
-              onUpdatePassengerStatus={handlePassengerStatusUpdate}
-              isExpanded={expandedPassenger === trip.passenger.id}
-              onToggleExpand={() => setExpandedPassenger(
-                expandedPassenger === trip.passenger.id ? null : trip.passenger.id
-              )}
-            />
+            <div className="space-y-3">
+              {trip.passengers.map(p => (
+                <PassengerCard
+                  key={p.id}
+                  passenger={p}
+                  tripStatus={trip.status}
+                  onUpdatePassengerStatus={handlePassengerStatusUpdate}
+                  isExpanded={expandedPassenger === p.id}
+                  onToggleExpand={() =>
+                    setExpandedPassenger(expandedPassenger === p.id ? null : p.id)
+                  }
+                />
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Notes */}
         {trip.notes && (
           <div className="px-4">
             <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
@@ -284,7 +289,6 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
         )}
       </div>
 
-      {/* Fixed Action Button */}
       {isActive && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8 safe-area-bottom">
           {getActionButton()}
@@ -302,3 +306,4 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
     </div>
   );
 }
+
