@@ -16,7 +16,7 @@ interface ActiveTripProps {
 export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStatus }: ActiveTripProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [expandedPassenger, setExpandedPassenger] = useState<string | null>(trip.passengers[0]?.id ?? null);
+  const [expandedPassenger, setExpandedPassenger] = useState<string | null>(null);
   const scheduledTime = new Date(trip.scheduledTime);
 
   const handleUpdateStatus = useCallback(async (newStatus: TripStatus) => {
@@ -52,6 +52,15 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
   }, [trip.passengers]);
 
   const anyPickedUp = useMemo(() => trip.passengers.some(p => p.status === 'picked_up'), [trip.passengers]);
+
+  // Find the first pending passenger for "active pickup" indicator
+  const activePickupPassengerId = useMemo(() => {
+    if (trip.status !== 'en_route_pickup' && trip.status !== 'arrived_pickup') {
+      return null;
+    }
+    const firstPending = trip.passengers.find(p => p.status === 'pending');
+    return firstPending?.id ?? null;
+  }, [trip.passengers, trip.status]);
 
   const getActionButton = () => {
     switch (trip.status) {
@@ -273,6 +282,7 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
                   onToggleExpand={() =>
                     setExpandedPassenger(expandedPassenger === p.id ? null : p.id)
                   }
+                  isActivePickup={activePickupPassengerId === p.id}
                 />
               ))}
             </div>

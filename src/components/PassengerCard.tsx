@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, MessageCircle, UserCheck, UserX, XCircle, CheckCircle2, Loader2, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Phone, MessageCircle, UserCheck, UserX, XCircle, CheckCircle2, Loader2, ChevronDown, ChevronUp, Users, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Passenger, PassengerStatus, TripStatus } from '@/types/trip';
@@ -10,6 +10,7 @@ interface PassengerCardProps {
   onUpdatePassengerStatus: (passengerId: string, status: PassengerStatus) => Promise<void>;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  isActivePickup?: boolean;
 }
 
 type ActionType = 'picked_up' | 'dropped_off' | 'failed_pickup' | 'cancelled';
@@ -20,6 +21,7 @@ export function PassengerCard({
   onUpdatePassengerStatus,
   isExpanded = false,
   onToggleExpand,
+  isActivePickup = false,
 }: PassengerCardProps) {
   const [confirmAction, setConfirmAction] = useState<ActionType | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -36,6 +38,16 @@ export function PassengerCard({
   };
 
   const getStatusBadge = () => {
+    // Show "En route" badge if this is active pickup passenger
+    if (isActivePickup && passenger.status === 'pending') {
+      return (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/20 border border-primary/40 rounded-lg animate-pulse">
+          <Navigation className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold text-primary">En route</span>
+        </div>
+      );
+    }
+
     const statusConfig = {
       picked_up: { icon: UserCheck, label: 'Picked Up', bg: 'bg-success', text: 'text-success-foreground' },
       dropped_off: { icon: CheckCircle2, label: 'Dropped Off', bg: 'bg-success', text: 'text-success-foreground' },
@@ -72,20 +84,35 @@ export function PassengerCard({
 
   const availableActions = getAvailableActions();
 
+  // Card highlight for active pickup
+  const cardClasses = isActivePickup && passenger.status === 'pending'
+    ? 'bg-card border-2 border-primary/50 rounded-xl overflow-hidden shadow-lg shadow-primary/10'
+    : 'bg-card border border-border rounded-xl overflow-hidden';
+
   return (
     <>
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className={cardClasses}>
         {/* Header - Always visible */}
         <button
           onClick={onToggleExpand}
           className="w-full p-4 flex items-center justify-between active:bg-secondary/50 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
-              <Users className="w-5 h-5 text-muted-foreground" />
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              isActivePickup && passenger.status === 'pending' 
+                ? 'bg-primary/20 border border-primary/40' 
+                : 'bg-secondary'
+            }`}>
+              {isActivePickup && passenger.status === 'pending' ? (
+                <Navigation className="w-5 h-5 text-primary" />
+              ) : (
+                <Users className="w-5 h-5 text-muted-foreground" />
+              )}
             </div>
             <div className="text-left">
-              <p className="font-semibold text-foreground">{passenger.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-foreground">{passenger.name}</p>
+              </div>
               <p className="text-sm text-muted-foreground">{passenger.count} passenger{passenger.count > 1 ? 's' : ''}</p>
             </div>
           </div>

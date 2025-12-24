@@ -3,6 +3,7 @@ import { Header } from '@/components/Header';
 import { TripList } from '@/components/TripList';
 import { ActiveTrip } from '@/components/ActiveTrip';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { DriverSidebar } from '@/components/DriverSidebar';
 import { mockDriver, mockTrips } from '@/data/mockData';
 import { Trip, TripStatus, PassengerStatus, StatusLogEntry } from '@/types/trip';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +14,7 @@ const Index = () => {
   const [trips, setTrips] = useState<Trip[]>(mockTrips);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [statusLog, setStatusLog] = useState<StatusLogEntry[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline, isReconnecting } = useNetworkStatus();
@@ -143,7 +145,13 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {!isOnline && <OfflineBanner isReconnecting={isReconnecting} />}
       
-      <Header driver={driverInfo} />
+      <Header driver={driverInfo} onMenuClick={() => setIsSidebarOpen(true)} />
+      
+      <DriverSidebar 
+        driver={driverInfo} 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
       
       {selectedTrip ? (
         <ActiveTrip 
