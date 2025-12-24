@@ -13,6 +13,7 @@ interface TripMapLeafletProps {
   driver?: Coords;
   status: TripStatus;
   className?: string;
+  height?: number | string;
 }
 
 function FitToBounds({ points }: { points: LatLngExpression[] }) {
@@ -28,7 +29,7 @@ function FitToBounds({ points }: { points: LatLngExpression[] }) {
   return null;
 }
 
-export function TripMapLeaflet({ pickup, dropoff, driver, status, className }: TripMapLeafletProps) {
+export function TripMapLeaflet({ pickup, dropoff, driver, status, className, height = 220 }: TripMapLeafletProps) {
   useEffect(() => {
     configureLeafletDefaults();
   }, []);
@@ -61,7 +62,7 @@ export function TripMapLeaflet({ pickup, dropoff, driver, status, className }: T
     return (
       <div
         className={"relative w-full overflow-hidden rounded-xl border border-border bg-card " + (className ?? "")}
-        style={{ height: 220 }}
+        style={{ height }}
       >
         <div className="absolute inset-0 grid place-items-center p-4 text-center">
           <div className="space-y-2">
@@ -88,7 +89,7 @@ export function TripMapLeaflet({ pickup, dropoff, driver, status, className }: T
   return (
     <div
       className={"relative w-full overflow-hidden rounded-xl border border-border bg-card " + (className ?? "")}
-      style={{ height: 220 }}
+      style={{ height }}
     >
       <MapContainer
         center={center}

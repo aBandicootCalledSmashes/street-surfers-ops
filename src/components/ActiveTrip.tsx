@@ -3,7 +3,7 @@ import { MapPin, Navigation, CheckCircle2, ArrowLeft, Loader2, AlertCircle, Cloc
 import { Button } from '@/components/ui/button';
 import { Trip, TripStatus, PassengerStatus } from '@/types/trip';
 import { PassengerCard } from './PassengerCard';
-import { TripMapLeaflet } from './TripMapLeaflet';
+import { TripMapPanel } from './TripMapPanel';
 import { format } from 'date-fns';
 
 interface ActiveTripProps {
@@ -50,6 +50,17 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
     if (!trip.passengers.length) return false;
     return trip.passengers.every(p => p.status === 'dropped_off' || p.status === 'failed_pickup' || p.status === 'cancelled');
   }, [trip.passengers]);
+
+  const hasWaitingPassengers = useMemo(
+    () => trip.passengers.some(p => p.status === 'pending'),
+    [trip.passengers]
+  );
+
+  const canEndTripWhileOnBoard = useMemo(() => {
+    if (!trip.passengers.length) return false;
+    // Driver should be able to end the trip once nobody is still "Waiting".
+    return !hasWaitingPassengers;
+  }, [hasWaitingPassengers, trip.passengers.length]);
 
   const anyPickedUp = useMemo(() => trip.passengers.some(p => p.status === 'picked_up'), [trip.passengers]);
 
@@ -125,7 +136,7 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
           </div>
         );
       case 'in_progress':
-        if (allPassengersFinal) {
+        if (canEndTripWhileOnBoard || allPassengersFinal) {
           return (
             <Button
               variant="success"
@@ -135,13 +146,13 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
               disabled={isUpdating}
             >
               {isUpdating ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
-              Complete Trip
+              End Trip
             </Button>
           );
         }
         return (
           <div className="text-center py-4 text-muted-foreground">
-            Drop off, cancel, or no-show remaining passengers to complete.
+            Mark remaining waiting passengers (pickup/no-show/cancel) before ending the trip.
           </div>
         );
       default:
@@ -203,7 +214,7 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
         </div>
 
         <div className="px-4">
-          <TripMapLeaflet
+          <TripMapPanel
             pickup={trip.pickup.coordinates}
             dropoff={trip.dropoff.coordinates}
             driver={driverCoords}
