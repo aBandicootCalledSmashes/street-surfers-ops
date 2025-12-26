@@ -1,4 +1,4 @@
-import { MapPin, Clock, Users, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, Users, ChevronRight, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Trip } from '@/types/trip';
 import { format } from 'date-fns';
 
@@ -10,6 +10,24 @@ interface TripCardProps {
 
 export function TripCard({ trip, onClick, isActive }: TripCardProps) {
   const scheduledTime = new Date(trip.scheduledTime);
+
+  const getTripTypeBadge = () => {
+    const isInbound = trip.tripType === 'inbound';
+    return (
+      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide ${
+        isInbound 
+          ? 'bg-primary/20 text-primary' 
+          : 'bg-success/20 text-success'
+      }`}>
+        {isInbound ? (
+          <ArrowDownLeft className="w-3.5 h-3.5" />
+        ) : (
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        )}
+        {isInbound ? 'Inbound' : 'Outbound'}
+      </div>
+    );
+  };
 
   const getStatusBadge = () => {
     switch (trip.status) {
@@ -36,9 +54,12 @@ export function TripCard({ trip, onClick, isActive }: TripCardProps) {
       }`}
     >
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-muted-foreground" />
-          <span className="text-xl font-bold">{format(scheduledTime, 'HH:mm')}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-muted-foreground" />
+            <span className="text-xl font-bold">{format(scheduledTime, 'HH:mm')}</span>
+          </div>
+          {getTripTypeBadge()}
         </div>
         <div className="flex items-center gap-2">
           {getStatusBadge()}

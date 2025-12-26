@@ -11,6 +11,7 @@ export const mockDriver: Driver = {
 export const mockTrips: Trip[] = [
   {
     id: 'trip-001',
+    tripType: 'inbound',
     passengers: [
       {
         id: 'pax-001',
@@ -18,6 +19,7 @@ export const mockTrips: Trip[] = [
         phone: '+27 82 555 1234',
         count: 1,
         status: 'pending',
+        homeAddress: '45 Long Street, Cape Town CBD',
       },
       {
         id: 'pax-001b',
@@ -25,26 +27,28 @@ export const mockTrips: Trip[] = [
         phone: '+27 82 555 1234',
         count: 1,
         status: 'pending',
+        homeAddress: '52 Loop Street, Cape Town',
       },
     ],
     pickup: {
-      address: '45 Long Street, Cape Town CBD',
-      landmark: 'Near the clock tower',
+      address: 'Various Home Addresses',
+      landmark: 'Pick up from homes',
       coordinates: { lat: -33.9249, lng: 18.4241 },
     },
     dropoff: {
-      address: '12 Beach Road, Muizenberg',
-      landmark: 'Blue house on corner',
+      address: 'Street Surfers HQ, 12 Beach Road, Muizenberg',
+      landmark: 'Main Office Building',
       coordinates: { lat: -34.1086, lng: 18.4688 },
     },
-    scheduledTime: '2025-12-21T19:30:00',
+    scheduledTime: '2025-12-21T07:30:00',
     status: 'assigned',
-    notes: 'Passenger has luggage',
-    createdAt: '2025-12-21T15:00:00',
-    updatedAt: '2025-12-21T15:00:00',
+    notes: 'Morning shift pickup',
+    createdAt: '2025-12-21T06:00:00',
+    updatedAt: '2025-12-21T06:00:00',
   },
   {
     id: 'trip-002',
+    tripType: 'outbound',
     passengers: [
       {
         id: 'pax-002',
@@ -52,24 +56,26 @@ export const mockTrips: Trip[] = [
         phone: '+27 83 555 5678',
         count: 1,
         status: 'pending',
+        homeAddress: '88 Main Road, Observatory',
       },
     ],
     pickup: {
-      address: '88 Main Road, Observatory',
-      landmark: 'Opposite the cafe',
-      coordinates: { lat: -33.9383, lng: 18.4656 },
+      address: 'Street Surfers HQ, 12 Beach Road, Muizenberg',
+      landmark: 'Main Office Building',
+      coordinates: { lat: -34.1086, lng: 18.4688 },
     },
     dropoff: {
-      address: '23 Victoria Road, Camps Bay',
-      coordinates: { lat: -33.9519, lng: 18.3781 },
+      address: 'Various Home Addresses',
+      coordinates: { lat: -33.9383, lng: 18.4656 },
     },
-    scheduledTime: '2025-12-21T20:00:00',
+    scheduledTime: '2025-12-21T17:30:00',
     status: 'assigned',
     createdAt: '2025-12-21T15:30:00',
     updatedAt: '2025-12-21T15:30:00',
   },
   {
     id: 'trip-003',
+    tripType: 'inbound',
     passengers: [
       {
         id: 'pax-003',
@@ -77,6 +83,7 @@ export const mockTrips: Trip[] = [
         phone: '+27 84 555 9012',
         count: 1,
         status: 'pending',
+        homeAddress: '156 Buitenkant Street, District Six',
       },
       {
         id: 'pax-003b',
@@ -84,6 +91,7 @@ export const mockTrips: Trip[] = [
         phone: '+27 84 555 9012',
         count: 1,
         status: 'pending',
+        homeAddress: '78 Kloof Street, Gardens',
       },
       {
         id: 'pax-003c',
@@ -91,6 +99,7 @@ export const mockTrips: Trip[] = [
         phone: '+27 84 555 9012',
         count: 1,
         status: 'pending',
+        homeAddress: '23 Regent Road, Sea Point',
       },
       {
         id: 'pax-003d',
@@ -98,25 +107,27 @@ export const mockTrips: Trip[] = [
         phone: '+27 84 555 9012',
         count: 1,
         status: 'pending',
+        homeAddress: '45 Main Drive, Green Point',
       },
     ],
     pickup: {
-      address: '156 Buitenkant Street, District Six',
+      address: 'Various Home Addresses',
       coordinates: { lat: -33.9311, lng: 18.4265 },
     },
     dropoff: {
-      address: '78 Kloof Street, Gardens',
-      landmark: 'Next to the pharmacy',
-      coordinates: { lat: -33.9328, lng: 18.4041 },
+      address: 'Street Surfers HQ, 12 Beach Road, Muizenberg',
+      landmark: 'Main Office Building',
+      coordinates: { lat: -34.1086, lng: 18.4688 },
     },
-    scheduledTime: '2025-12-21T20:45:00',
+    scheduledTime: '2025-12-21T08:00:00',
     status: 'assigned',
     notes: 'Call on arrival',
-    createdAt: '2025-12-21T16:00:00',
-    updatedAt: '2025-12-21T16:00:00',
+    createdAt: '2025-12-21T06:30:00',
+    updatedAt: '2025-12-21T06:30:00',
   },
   {
     id: 'trip-004',
+    tripType: 'outbound',
     passengers: [
       {
         id: 'pax-004',
@@ -124,6 +135,7 @@ export const mockTrips: Trip[] = [
         phone: '+27 85 555 3456',
         count: 1,
         status: 'pending',
+        homeAddress: '200 Voortrekker Road, Bellville',
       },
       {
         id: 'pax-004b',
@@ -131,17 +143,19 @@ export const mockTrips: Trip[] = [
         phone: '+27 85 555 3456',
         count: 1,
         status: 'pending',
+        homeAddress: '45 Strand Street, Cape Town',
       },
     ],
     pickup: {
-      address: '200 Voortrekker Road, Bellville',
-      coordinates: { lat: -33.8968, lng: 18.6360 },
+      address: 'Street Surfers HQ, 12 Beach Road, Muizenberg',
+      landmark: 'Main Office Building',
+      coordinates: { lat: -34.1086, lng: 18.4688 },
     },
     dropoff: {
-      address: '45 Strand Street, Cape Town',
-      coordinates: { lat: -33.9176, lng: 18.4218 },
+      address: 'Various Home Addresses',
+      coordinates: { lat: -33.8968, lng: 18.6360 },
     },
-    scheduledTime: '2025-12-21T21:15:00',
+    scheduledTime: '2025-12-21T18:00:00',
     status: 'assigned',
     createdAt: '2025-12-21T16:30:00',
     updatedAt: '2025-12-21T16:30:00',

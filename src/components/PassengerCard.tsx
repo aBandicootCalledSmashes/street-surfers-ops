@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Phone, MessageCircle, UserCheck, UserX, XCircle, CheckCircle2, Loader2, ChevronDown, ChevronUp, Users, Navigation } from 'lucide-react';
+import { Phone, MessageCircle, UserCheck, UserX, XCircle, CheckCircle2, Loader2, ChevronDown, ChevronUp, Users, Navigation, MapPin, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Passenger, PassengerStatus, TripStatus } from '@/types/trip';
+import { Passenger, PassengerStatus, TripStatus, TripType } from '@/types/trip';
 
 interface PassengerCardProps {
   passenger: Passenger;
   tripStatus: TripStatus;
+  tripType: TripType;
   onUpdatePassengerStatus: (passengerId: string, status: PassengerStatus) => Promise<void>;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -15,9 +16,50 @@ interface PassengerCardProps {
 
 type ActionType = 'picked_up' | 'dropped_off' | 'failed_pickup' | 'cancelled';
 
+// Open device maps app with address
+function openMapsNavigation(address: string) {
+  const encodedAddress = encodeURIComponent(address);
+  
+  // Detect platform and open appropriate maps app
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+  const isAndroid = /android/.test(userAgent);
+  
+  let mapsUrl: string;
+  
+  if (isIOS) {
+    // Apple Maps on iOS
+    mapsUrl = `maps://maps.apple.com/?daddr=${encodedAddress}`;
+  } else if (isAndroid) {
+    // Google Maps on Android
+    mapsUrl = `google.navigation:q=${encodedAddress}`;
+  } else {
+    // Google Maps web for desktop
+    mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+  }
+  
+  // Try to open the native app, fallback to Google Maps web
+  const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+  
+  if (isIOS || isAndroid) {
+    // Try native app first
+    const timeout = setTimeout(() => {
+      window.open(fallbackUrl, '_blank');
+    }, 500);
+    
+    window.location.href = mapsUrl;
+    
+    // If we're still here after a moment, the app didn't open
+    window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
+  } else {
+    window.open(fallbackUrl, '_blank');
+  }
+}
+
 export function PassengerCard({
   passenger,
   tripStatus,
+  tripType,
   onUpdatePassengerStatus,
   isExpanded = false,
   onToggleExpand,
@@ -35,6 +77,17 @@ export function PassengerCard({
       setProcessing(false);
       setConfirmAction(null);
     }
+  };
+
+  // Determine which address to show based on trip type
+  const getPassengerAddress = () => {
+    // Inbound: Home → Work, so show pickup address (home)
+    // Outbound: Work → Homes, so show dropoff address (home)
+    return passenger.homeAddress;
+  };
+
+  const getAddressLabel = () => {
+    return tripType === 'inbound' ? 'Pickup Address' : 'Drop-off Address';
   };
 
   const getStatusBadge = () => {
@@ -83,6 +136,7 @@ export function PassengerCard({
   };
 
   const availableActions = getAvailableActions();
+  const passengerAddress = getPassengerAddress();
 
   // Card highlight for active pickup
   const cardClasses = isActivePickup && passenger.status === 'pending'
@@ -128,6 +182,30 @@ export function PassengerCard({
         {/* Expanded content */}
         {isExpanded && (
           <div className="border-t border-border p-4 space-y-4 animate-slide-up">
+            {/* Address section */}
+            <div className="bg-secondary/50 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">{getAddressLabel()}</p>
+                  <p className="text-sm text-foreground">{passengerAddress}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigate button */}
+            {passenger.status === 'pending' && passengerAddress && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full min-h-[52px] text-base font-semibold border-primary text-primary hover:bg-primary/10"
+                onClick={() => openMapsNavigation(passengerAddress)}
+              >
+                <ExternalLink className="w-5 h-5" />
+                Navigate
+              </Button>
+            )}
+
             {/* Contact buttons */}
             <div className="flex gap-2">
               <a 
