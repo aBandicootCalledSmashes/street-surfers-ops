@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { TripList } from '@/components/TripList';
 import { ActiveTrip } from '@/components/ActiveTrip';
@@ -9,6 +9,7 @@ import { Trip, TripStatus, PassengerStatus, StatusLogEntry } from '@/types/trip'
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useDriverLocation, requestNotificationPermission } from '@/hooks/useDriverLocation';
 
 const Index = () => {
   const [trips, setTrips] = useState<Trip[]>(mockTrips);
@@ -18,6 +19,43 @@ const Index = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline, isReconnecting } = useNetworkStatus();
+
+  // Use mock driver data but could integrate with auth user email
+  const driverInfo = {
+    ...mockDriver,
+    name: user?.email?.split('@')[0] || mockDriver.name,
+  };
+
+  // Live location tracking
+  const { location, error: locationError, isTracking } = useDriverLocation({
+    driverId: driverInfo.id,
+    enabled: driverInfo.isOnline && !!user,
+    updateInterval: 15000, // Update every 15 seconds
+  });
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if (user) {
+      requestNotificationPermission().then((granted) => {
+        if (granted) {
+          console.log('[Notifications] Permission granted');
+        }
+      });
+    }
+  }, [user]);
+
+  // Log location tracking status
+  useEffect(() => {
+    if (isTracking) {
+      console.log('[Location] Tracking active');
+    }
+    if (locationError) {
+      console.warn('[Location] Error:', locationError);
+    }
+    if (location) {
+      console.log('[Location] Updated:', location.lat.toFixed(6), location.lng.toFixed(6));
+    }
+  }, [isTracking, locationError, location]);
 
   const handleSelectTrip = (trip: Trip) => {
     setSelectedTrip(trip);
@@ -134,12 +172,6 @@ const Index = () => {
     t.status === 'arrived_pickup' || 
     t.status === 'in_progress'
   )?.id;
-
-  // Use mock driver data but could integrate with auth user email
-  const driverInfo = {
-    ...mockDriver,
-    name: user?.email?.split('@')[0] || mockDriver.name,
-  };
 
   return (
     <div className="min-h-screen bg-background">

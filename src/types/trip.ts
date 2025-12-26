@@ -6,6 +6,8 @@ export type TripStatus =
   | 'completed' 
   | 'cancelled';
 
+export type TripType = 'inbound' | 'outbound';
+
 export type PassengerStatus = 
   | 'pending'
   | 'picked_up'
@@ -20,6 +22,13 @@ export interface Passenger {
   count: number;
   status: PassengerStatus;
   statusUpdatedAt?: string;
+  // For inbound trips: passenger's home address (pickup)
+  // For outbound trips: passenger's home address (dropoff)
+  homeAddress: string;
+  homeCoordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface Location {
@@ -33,6 +42,7 @@ export interface Location {
 
 export interface Trip {
   id: string;
+  tripType: TripType;
   passengers: Passenger[];
   pickup: Location;
   dropoff: Location;
@@ -57,4 +67,12 @@ export interface StatusLogEntry {
   newStatus: PassengerStatus;
   timestamp: string;
   tripId: string;
+}
+
+export interface DriverLocation {
+  driverId: string;
+  lat: number;
+  lng: number;
+  accuracy: number;
+  timestamp: string;
 }

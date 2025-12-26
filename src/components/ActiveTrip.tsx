@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
-import { MapPin, Navigation, CheckCircle2, ArrowLeft, Loader2, AlertCircle, Clock, Users } from 'lucide-react';
+import { MapPin, Navigation, CheckCircle2, ArrowLeft, Loader2, AlertCircle, Clock, Users, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Trip, TripStatus, PassengerStatus } from '@/types/trip';
 import { PassengerCard } from './PassengerCard';
@@ -72,6 +72,24 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
     const firstPending = trip.passengers.find(p => p.status === 'pending');
     return firstPending?.id ?? null;
   }, [trip.passengers, trip.status]);
+
+  const getTripTypeBadge = () => {
+    const isInbound = trip.tripType === 'inbound';
+    return (
+      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold uppercase tracking-wide ${
+        isInbound 
+          ? 'bg-primary/20 text-primary' 
+          : 'bg-success/20 text-success'
+      }`}>
+        {isInbound ? (
+          <ArrowDownLeft className="w-4 h-4" />
+        ) : (
+          <ArrowUpRight className="w-4 h-4" />
+        )}
+        {isInbound ? 'Inbound' : 'Outbound'}
+      </div>
+    );
+  };
 
   const getActionButton = () => {
     switch (trip.status) {
@@ -203,7 +221,7 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
       <div className="flex-1 space-y-4 pb-32">
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-4 flex items-center justify-between">
           <button
             onClick={onBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 pl-1 active:scale-95"
@@ -211,6 +229,7 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
             <ArrowLeft className="w-5 h-5" />
             <span className="text-base">Back</span>
           </button>
+          {getTripTypeBadge()}
         </div>
 
         <div className="px-4">
@@ -288,6 +307,7 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
                   key={p.id}
                   passenger={p}
                   tripStatus={trip.status}
+                  tripType={trip.tripType}
                   onUpdatePassengerStatus={handlePassengerStatusUpdate}
                   isExpanded={expandedPassenger === p.id}
                   onToggleExpand={() =>
@@ -327,4 +347,3 @@ export function ActiveTrip({ trip, onBack, onUpdateStatus, onUpdatePassengerStat
     </div>
   );
 }
-
