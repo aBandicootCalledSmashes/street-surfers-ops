@@ -16,11 +16,14 @@ interface PassengerCardProps {
 
 type ActionType = 'picked_up' | 'dropped_off' | 'failed_pickup' | 'cancelled';
 
-// Open device maps app with address
-function openMapsNavigation(address: string) {
-  const encodedAddress = encodeURIComponent(address);
+// Open device maps app with address - always opens in new tab/app
+function openMapsNavigation(address: string, coordinates?: { lat: number; lng: number }) {
+  // Use coordinates if available for more accurate navigation
+  const destination = coordinates 
+    ? `${coordinates.lat},${coordinates.lng}`
+    : encodeURIComponent(address);
   
-  // Detect platform and open appropriate maps app
+  // Detect platform
   const userAgent = navigator.userAgent.toLowerCase();
   const isIOS = /iphone|ipad|ipod/.test(userAgent);
   const isAndroid = /android/.test(userAgent);
@@ -28,31 +31,33 @@ function openMapsNavigation(address: string) {
   let mapsUrl: string;
   
   if (isIOS) {
-    // Apple Maps on iOS
-    mapsUrl = `maps://maps.apple.com/?daddr=${encodedAddress}`;
+    // Apple Maps deep link - opens in Maps app
+    mapsUrl = coordinates
+      ? `maps://maps.apple.com/?daddr=${coordinates.lat},${coordinates.lng}`
+      : `maps://maps.apple.com/?daddr=${destination}`;
   } else if (isAndroid) {
-    // Google Maps on Android
-    mapsUrl = `google.navigation:q=${encodedAddress}`;
+    // Google Maps intent - opens in Maps app
+    mapsUrl = coordinates
+      ? `https://www.google.com/maps/dir/?api=1&destination=${coordinates.lat},${coordinates.lng}`
+      : `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
   } else {
-    // Google Maps web for desktop
-    mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+    // Desktop - Google Maps web in new tab
+    mapsUrl = coordinates
+      ? `https://www.google.com/maps/dir/?api=1&destination=${coordinates.lat},${coordinates.lng}`
+      : `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
   }
   
-  // Try to open the native app, fallback to Google Maps web
-  const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+  // Always open in new tab/window to preserve app state
+  // Using window.open with '_blank' ensures the current page stays active
+  const newWindow = window.open(mapsUrl, '_blank', 'noopener,noreferrer');
   
-  if (isIOS || isAndroid) {
-    // Try native app first
-    const timeout = setTimeout(() => {
-      window.open(fallbackUrl, '_blank');
-    }, 500);
-    
-    window.location.href = mapsUrl;
-    
-    // If we're still here after a moment, the app didn't open
-    window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
-  } else {
-    window.open(fallbackUrl, '_blank');
+  // Fallback for iOS if maps:// doesn't work
+  if (isIOS && !newWindow) {
+    // Try HTTPS fallback for Apple Maps
+    const fallbackUrl = coordinates
+      ? `https://maps.apple.com/?daddr=${coordinates.lat},${coordinates.lng}`
+      : `https://maps.apple.com/?daddr=${destination}`;
+    window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
   }
 }
 
@@ -199,7 +204,10 @@ export function PassengerCard({
                 variant="outline"
                 size="lg"
                 className="w-full min-h-[52px] text-base font-semibold border-primary text-primary hover:bg-primary/10"
-                onClick={() => openMapsNavigation(passengerAddress)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openMapsNavigation(passengerAddress, passenger.homeCoordinates);
+                }}
               >
                 <ExternalLink className="w-5 h-5" />
                 Navigate

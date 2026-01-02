@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { DriverLocation } from '@/types/trip';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseDriverLocationOptions {
   driverId: string;
@@ -73,25 +74,31 @@ export function useDriverLocation({ driverId, enabled, updateInterval = 10000 }:
     }
   }, [toast]);
 
-  // Send location to backend (placeholder for now)
-  const sendLocationToBackend = useCallback(async (loc: DriverLocation) => {
-    // TODO: Replace with actual Supabase call when backend is ready
-    console.log('[Location Stream]', {
-      driverId: loc.driverId,
-      lat: loc.lat.toFixed(6),
-      lng: loc.lng.toFixed(6),
-      accuracy: `${loc.accuracy.toFixed(0)}m`,
-      timestamp: loc.timestamp,
-    });
-    
-    // Future implementation:
-    // await supabase.from('driver_locations').upsert({
-    //   driver_id: loc.driverId,
-    //   lat: loc.lat,
-    //   lng: loc.lng,
-    //   accuracy: loc.accuracy,
-    //   updated_at: loc.timestamp,
-    // });
+  // Send location to backend via Supabase
+  const sendLocationToBackend = useCallback(async (loc: DriverLocation, vehicleId?: string) => {
+    try {
+      const { error } = await supabase.from('driver_locations').upsert(
+        {
+          driver_id: loc.driverId,
+          vehicle_id: vehicleId || null,
+          latitude: loc.lat,
+          longitude: loc.lng,
+          accuracy: loc.accuracy,
+          updated_at: loc.timestamp,
+        },
+        {
+          onConflict: 'driver_id',
+        }
+      );
+
+      if (error) {
+        console.error('[Location Stream] Backend error:', error);
+      } else {
+        console.log('[Location Stream] Updated:', loc.lat.toFixed(6), loc.lng.toFixed(6));
+      }
+    } catch (err) {
+      console.error('[Location Stream] Failed:', err);
+    }
   }, []);
 
   // Start location tracking

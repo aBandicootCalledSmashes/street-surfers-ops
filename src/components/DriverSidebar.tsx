@@ -21,6 +21,11 @@ export function DriverSidebar({ driver, isOpen, onClose }: DriverSidebarProps) {
     navigate('/auth', { replace: true });
   };
 
+  const handleProfileClick = () => {
+    onClose();
+    navigate('/profile');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -84,10 +89,7 @@ export function DriverSidebar({ driver, isOpen, onClose }: DriverSidebarProps) {
             <li>
               <button
                 className="w-full flex items-center gap-3 p-4 rounded-lg hover:bg-secondary transition-colors active:scale-98 min-h-[52px]"
-                onClick={() => {
-                  // Future: Navigate to profile settings
-                  onClose();
-                }}
+                onClick={handleProfileClick}
               >
                 <User className="w-5 h-5 text-muted-foreground" />
                 <span className="font-medium">My Profile</span>
@@ -96,10 +98,7 @@ export function DriverSidebar({ driver, isOpen, onClose }: DriverSidebarProps) {
             <li>
               <button
                 className="w-full flex items-center gap-3 p-4 rounded-lg hover:bg-secondary transition-colors active:scale-98 min-h-[52px]"
-                onClick={() => {
-                  // Future: Navigate to settings
-                  onClose();
-                }}
+                onClick={handleProfileClick}
               >
                 <Settings className="w-5 h-5 text-muted-foreground" />
                 <span className="font-medium">Settings</span>
