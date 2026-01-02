@@ -14,6 +14,154 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_locations: {
+        Row: {
+          accuracy: number | null
+          driver_id: string
+          id: string
+          latitude: number
+          longitude: number
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          driver_id: string
+          id?: string
+          latitude: number
+          longitude: number
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          driver_id?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          dispatcher_name: string | null
+          dispatcher_phone: string | null
+          email: string | null
+          id: string
+          is_online: boolean
+          license_number: string | null
+          name: string
+          phone: string | null
+          plate_number: string | null
+          profile_photo_url: string | null
+          updated_at: string
+          user_id: string
+          vehicle_color: string | null
+          vehicle_make: string | null
+          vehicle_model: string | null
+        }
+        Insert: {
+          created_at?: string
+          dispatcher_name?: string | null
+          dispatcher_phone?: string | null
+          email?: string | null
+          id?: string
+          is_online?: boolean
+          license_number?: string | null
+          name: string
+          phone?: string | null
+          plate_number?: string | null
+          profile_photo_url?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+        }
+        Update: {
+          created_at?: string
+          dispatcher_name?: string | null
+          dispatcher_phone?: string | null
+          email?: string | null
+          id?: string
+          is_online?: boolean
+          license_number?: string | null
+          name?: string
+          phone?: string | null
+          plate_number?: string | null
+          profile_photo_url?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+        }
+        Relationships: []
+      }
+      safety_log: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          triggered_by: string
+          trip_id: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          triggered_by?: string
+          trip_id?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          triggered_by?: string
+          trip_id?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_log_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

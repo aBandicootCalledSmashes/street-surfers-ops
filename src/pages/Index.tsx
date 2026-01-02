@@ -4,12 +4,14 @@ import { TripList } from '@/components/TripList';
 import { ActiveTrip } from '@/components/ActiveTrip';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { DriverSidebar } from '@/components/DriverSidebar';
+import { SOSButton } from '@/components/SOSButton';
 import { mockDriver, mockTrips } from '@/data/mockData';
 import { Trip, TripStatus, PassengerStatus, StatusLogEntry } from '@/types/trip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useDriverLocation, requestNotificationPermission } from '@/hooks/useDriverLocation';
+import { useProfile } from '@/hooks/useProfile';
 
 const Index = () => {
   const [trips, setTrips] = useState<Trip[]>(mockTrips);
@@ -19,18 +21,30 @@ const Index = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline, isReconnecting } = useNetworkStatus();
+  const { profile } = useProfile();
 
-  // Use mock driver data but could integrate with auth user email
+  // Use profile data if available, otherwise fall back to mock
   const driverInfo = {
-    ...mockDriver,
-    name: user?.email?.split('@')[0] || mockDriver.name,
+    id: profile?.id || mockDriver.id,
+    name: profile?.name || user?.email?.split('@')[0] || mockDriver.name,
+    vehicle: profile?.vehicle_make && profile?.vehicle_model 
+      ? `${profile.vehicle_make} ${profile.vehicle_model}` 
+      : mockDriver.vehicle,
+    plateNumber: profile?.plate_number || mockDriver.plateNumber,
+    isOnline: profile?.is_online ?? mockDriver.isOnline,
   };
 
-  // Live location tracking
+  // Live location tracking - only when online AND has active trip
+  const hasActiveTrip = trips.some(t => 
+    t.status === 'en_route_pickup' || 
+    t.status === 'arrived_pickup' || 
+    t.status === 'in_progress'
+  );
+  
   const { location, error: locationError, isTracking } = useDriverLocation({
-    driverId: driverInfo.id,
-    enabled: driverInfo.isOnline && !!user,
-    updateInterval: 15000, // Update every 15 seconds
+    driverId: profile?.id || driverInfo.id,
+    enabled: driverInfo.isOnline && hasActiveTrip && !!user,
+    updateInterval: 8000, // Update every 8 seconds
   });
 
   // Request notification permission on mount
@@ -183,6 +197,14 @@ const Index = () => {
         driver={driverInfo} 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
+      />
+
+      {/* SOS Button - always visible */}
+      <SOSButton
+        driverId={profile?.id || driverInfo.id}
+        tripId={selectedTrip?.id || activeTripId}
+        vehicleId={profile?.plate_number || driverInfo.plateNumber}
+        location={location}
       />
       
       {selectedTrip ? (
